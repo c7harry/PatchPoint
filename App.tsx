@@ -1,34 +1,31 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Provider as PaperProvider, MD3DarkTheme } from 'react-native-paper';
+import { SafeAreaView, StyleSheet } from 'react-native';
+import { HomeScreen } from './src/screens/HomeScreen';
+
+const theme = {
+  ...MD3DarkTheme,
+  colors: {
+    ...MD3DarkTheme.colors,
+    primary: '#3b82f6',
+    secondary: '#8b5cf6',
+    background: '#0f172a',
+    surface: '#1e293b'
+  }
+};
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>PatchPoint</Text>
-      <Text style={styles.subtitle}>Universal React Native (iOS • Android • Web)</Text>
-      <StatusBar style="auto" />
-    </View>
+    <PaperProvider theme={theme}>
+      <SafeAreaView style={styles.root}>
+        <HomeScreen />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 12
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#ccc',
-    textAlign: 'center'
-  }
+  root: { flex: 1, backgroundColor: theme.colors.background }
 });
