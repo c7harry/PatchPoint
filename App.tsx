@@ -1,27 +1,36 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as PaperProvider, MD3DarkTheme } from 'react-native-paper';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { appTheme } from './src/theme/theme';
 import { SafeAreaView, StyleSheet } from 'react-native';
 import { HomeScreen } from './src/screens/HomeScreen';
 
-const theme = {
-  ...MD3DarkTheme,
-  colors: {
-    ...MD3DarkTheme.colors,
-    primary: '#3b82f6',
-    secondary: '#8b5cf6',
-    background: '#0f172a',
-    surface: '#1e293b'
+const theme = appTheme;
+
+class RootErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; err?: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
   }
-};
+  static getDerivedStateFromError(err: any) { return { hasError: true, err }; }
+  componentDidCatch(err: any, info: any) { console.warn('Root error boundary caught', err, info); }
+  render() {
+    if (this.state.hasError) {
+      return <SafeAreaView style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}><StatusBar style="light" /><HomeScreen /></SafeAreaView>;
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   return (
     <PaperProvider theme={theme}>
-      <SafeAreaView style={styles.root}>
-        <HomeScreen />
-        <StatusBar style="light" />
-      </SafeAreaView>
+      <RootErrorBoundary>
+        <SafeAreaView style={styles.root}>
+          <HomeScreen />
+          <StatusBar style="light" />
+        </SafeAreaView>
+      </RootErrorBoundary>
     </PaperProvider>
   );
 }
