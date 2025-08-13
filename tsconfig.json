@@ -2,10 +2,10 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "target": "es2017",
-    "module": "esnext",
+    "module": "NodeNext",
     "jsx": "react-jsx",
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
