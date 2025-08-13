@@ -1,0 +1,12 @@
+# Netlify build configuration
+[build]
+  publish = "dist"
+  command = "npm run build:web"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
