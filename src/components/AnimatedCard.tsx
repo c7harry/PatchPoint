@@ -55,7 +55,7 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
     outputRange: [0, 1],
   });
 
-  const cardHeight = hero ? 320 : featured ? 220 : 180;
+  const cardHeight = hero ? 200 : featured ? 240 : 220;
   const cardWidthStyle = hero ? screenWidth - cardSpacing * 2 : cardWidth;
   const hasImage = !!article.image;
 
@@ -123,7 +123,7 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
               </View>
               <View style={styles.bodyContent}>
                 <Text variant={featured ? 'titleLarge' : 'titleMedium'} style={styles.standardTitle} numberOfLines={2}>{article.title}</Text>
-                <Text variant="bodySmall" style={styles.standardSummary} numberOfLines={3}>{article.summary}</Text>
+                <Text variant="bodySmall" style={styles.standardSummary} numberOfLines={4}>{article.summary}</Text>
                 <View style={styles.metaRow}>
                   <Text variant="labelSmall" style={styles.source}>{article.source}</Text>
                   <Text style={styles.time} variant="labelSmall">{timeAgo(article.publishedAt)}</Text>
@@ -169,14 +169,14 @@ const styles = StyleSheet.create({
   overlayContentHero: {},
   headerRow: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:10 },
   standardWrapper: { flex:1 },
-  topMedia: { height:120, position:'relative' },
+  topMedia: { height:90, position:'relative' },
   topImage: { width:'100%', height:'100%' },
   topGradient: { ...StyleSheet.absoluteFillObject },
   topChipWrap: { position:'absolute', top:8, left:8 },
-  bodyContent: { padding:14 },
-  standardTitle: { color: palette.textPrimary, fontWeight:'700', lineHeight:22 },
-  standardSummary: { color: palette.textSecondary, lineHeight:17 },
-  metaRow: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginTop:4 },
+  bodyContent: { padding:12, flex:1, justifyContent:'space-between' },
+  standardTitle: { color: palette.textPrimary, fontWeight:'700', lineHeight:20, marginBottom:6 },
+  standardSummary: { color: palette.textSecondary, lineHeight:16, fontSize:12, marginBottom:8 },
+  metaRow: { flexDirection:'row', justifyContent:'space-between', alignItems:'center' },
   chip: {
     borderRadius: 12,
   },
