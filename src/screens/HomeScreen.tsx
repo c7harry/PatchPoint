@@ -27,50 +27,36 @@ export const HomeScreen: React.FC = () => {
   const renderMasonryLayout = () => {
     if (filtered.length === 0) return null;
 
-    const leftColumn: Article[] = [];
-    const rightColumn: Article[] = [];
+  const columns: Article[][] = [[], [], []];
     
-    // First article is always hero
+    // First article is always hero if present
     const hero = filtered[0];
     const remaining = filtered.slice(1);
-    
-    // Distribute remaining articles in masonry pattern
+
+    // Distribute remaining articles in 3 columns
     remaining.forEach((article, index) => {
-      if (index % 2 === 0) {
-        leftColumn.push(article);
-      } else {
-        rightColumn.push(article);
-      }
+      columns[index % 3].push(article);
     });
 
     return (
       <View style={styles.masonryContainer}>
         {/* Hero Card */}
-        <AnimatedCard article={hero} index={0} hero />
-        
+        {hero && <AnimatedCard article={hero} index={0} hero />}
+
         {/* Masonry Grid */}
         <View style={styles.gridContainer}>
-          <View style={styles.column}>
-            {leftColumn.map((article, index) => (
-              <AnimatedCard
-                key={article.id}
-                article={article}
-                index={index + 1}
-                featured={index === 0}
-              />
-            ))}
-          </View>
-          
-          <View style={styles.column}>
-            {rightColumn.map((article, index) => (
-              <AnimatedCard
-                key={article.id}
-                article={article}
-                index={index + leftColumn.length + 1}
-                featured={index === 0}
-              />
-            ))}
-          </View>
+          {columns.map((col, colIdx) => (
+            <View style={styles.column} key={colIdx}>
+              {col.map((article, idx) => (
+                <AnimatedCard
+                  key={article.id}
+                  article={article}
+                  index={colIdx * 10 + idx + 1}
+                  featured={idx === 0}
+                />
+              ))}
+            </View>
+          ))}
         </View>
       </View>
     );
@@ -131,11 +117,11 @@ export const HomeScreen: React.FC = () => {
             showsHorizontalScrollIndicator={false} 
             contentContainerStyle={styles.chipsRow}
           >
-            {categories.map(cat => (
+            {categories.map((cat, i) => (
               <Chip
                 key={cat}
                 compact
-                style={[styles.chip, category === cat && styles.chipActive]}
+                style={[styles.chip, category === cat && styles.chipActive, i === categories.length -1 && { marginRight: 0 }]}
                 textStyle={[styles.chipText, category === cat && styles.chipActiveText]}
                 onPress={() => setCategory(cat)}
               >
@@ -198,8 +184,7 @@ const styles = StyleSheet.create({
   searchBar: { marginBottom: 12, borderRadius: 16, backgroundColor: 'rgba(32,150,72,0.14)', borderWidth:1, borderColor: 'rgba(32,150,72,0.35)' },
   searchInput: { color: palette.textPrimary },
   chipsRow: { 
-    paddingRight: 16, 
-    gap: 8 
+    paddingRight: 16
   },
   chip: { backgroundColor: palette.chipBg, marginRight: 8, borderRadius: 16 },
   chipText: { color: palette.textSecondary, fontWeight: '500' },

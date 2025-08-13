@@ -8,7 +8,8 @@ import { timeAgo } from '../utils/time';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardSpacing = 12;
-const cardWidth = (screenWidth - cardSpacing * 3) / 2;
+const numColumns = 3;
+const cardWidth = (screenWidth - cardSpacing * (numColumns + 1)) / numColumns;
 
 interface Props { 
   article: Article; 
@@ -25,7 +26,7 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
     Animated.timing(animatedValue, {
       toValue: 1,
       duration: 600,
-      delay: index * 150,
+      delay: index * 25,
       useNativeDriver: true,
     }).start();
   }, [index]);
@@ -54,7 +55,7 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
     outputRange: [0, 1],
   });
 
-  const cardHeight = hero ? 320 : featured ? 260 : 230;
+  const cardHeight = hero ? 320 : featured ? 220 : 180;
   const cardWidthStyle = hero ? screenWidth - cardSpacing * 2 : cardWidth;
   const hasImage = !!article.image;
 
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
   topImage: { width:'100%', height:'100%' },
   topGradient: { ...StyleSheet.absoluteFillObject },
   topChipWrap: { position:'absolute', top:8, left:8 },
-  bodyContent: { padding:14, gap:6 },
+  bodyContent: { padding:14 },
   standardTitle: { color: palette.textPrimary, fontWeight:'700', lineHeight:22 },
   standardSummary: { color: palette.textSecondary, lineHeight:17 },
   metaRow: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginTop:4 },
