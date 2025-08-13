@@ -27,11 +27,12 @@ export const HomeScreen: React.FC = () => {
   const renderMasonryLayout = () => {
     if (filtered.length === 0) return null;
 
-  const columns: Article[][] = [[], [], []];
+    const columns: Article[][] = [[], [], []];
     
-    // First article is always hero if present
-    const hero = filtered[0];
-    const remaining = filtered.slice(1);
+    // Only show hero if 6+ articles are present
+    const showHero = filtered.length >= 6;
+    const hero = showHero ? filtered[0] : null;
+    const remaining = showHero ? filtered.slice(1) : filtered;
 
     // Distribute remaining articles in 3 columns
     remaining.forEach((article, index) => {
@@ -40,7 +41,7 @@ export const HomeScreen: React.FC = () => {
 
     return (
       <View style={styles.masonryContainer}>
-        {/* Hero Card */}
+        {/* Hero Card - only shown when 6+ articles */}
         {hero && <AnimatedCard article={hero} index={0} hero />}
 
         {/* Masonry Grid */}
@@ -198,14 +199,16 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   masonryContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   gridContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 8,
   },
   column: {
     flex: 1,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
   },
 });
