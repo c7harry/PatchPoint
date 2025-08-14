@@ -152,18 +152,6 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, variant }) => {
         ]}
       />
 
-      {/* Gradient Overlays */}
-      <LinearGradient
-        colors={[
-          'rgba(0,0,0,0.1)',
-          'rgba(0,0,0,0.3)',
-          'rgba(0,0,0,0.8)',
-          'rgba(0,0,0,0.95)'
-        ]}
-        style={styles.heroGradient}
-        locations={[0, 0.4, 0.8, 1]}
-      />
-
       {/* Content overlays image, no extra space */}
       <View style={styles.heroContent} pointerEvents="box-none">
         {/* Category & Time */}
@@ -181,7 +169,12 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, variant }) => {
         <Text style={styles.heroTitle} numberOfLines={3}>
           {article.title}
         </Text>
-
+            {/* Shadow background for text readability */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)']}
+              style={styles.heroTextShadow}
+              locations={[0, 0.2, 1]}
+            />
         {/* Summary */}
         <Text style={styles.heroSummary} numberOfLines={3}>
           {article.summary}
@@ -253,10 +246,6 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, variant }) => {
           source={{ uri: article.image || `https://picsum.photos/seed/${article.id}/400/300` }}
           style={styles.gridImage}
           resizeMode="cover"
-        />
-        <LinearGradient
-          colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.6)']}
-          style={styles.gridImageOverlay}
         />
       </View>
 
@@ -400,6 +389,16 @@ const getCategoryColor = (category: string): string => {
 };
 
 const styles = StyleSheet.create({
+  heroTextShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    // Start the shadow just above the meta/time tag (about 80px from bottom)
+    bottom: 0,
+    top: '-10%',
+    zIndex: -1,
+    pointerEvents: 'none',
+  },
   touchable: {
     flex: 1,
   },
@@ -474,7 +473,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 28,
-    zIndex: 4,
+    zIndex: 3,
     backgroundColor: 'transparent', // Ensure no background blocking
   },
 
@@ -682,7 +681,7 @@ const styles = StyleSheet.create({
   },
 
   gridImageContainer: {
-    height: 140,
+    height: 200,
     position: 'relative',
   },
 
@@ -700,7 +699,9 @@ const styles = StyleSheet.create({
   },
 
   gridContent: {
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingTop: 5,
+    paddingBottom: 8,
     flex: 1,
     backgroundColor: palette.surface || '#1a2f23',
   },
@@ -731,7 +732,7 @@ const styles = StyleSheet.create({
     color: palette.textSecondary || 'rgba(255,255,255,0.7)',
     fontSize: 12,
     lineHeight: 16,
-    marginBottom: 12,
+    marginBottom: 4,
   },
 
   gridFooter: {
