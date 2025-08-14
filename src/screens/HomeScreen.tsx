@@ -43,79 +43,99 @@ export const HomeScreen: React.FC = () => {
       );
     }
 
-    // Netflix-inspired sections
-    const featuredArticle = filtered[0];
-    const trendingArticles = filtered.slice(1, 6);
-    const latestArticles = filtered.slice(6, 12);
-    const categoryArticles = filtered.slice(12);
+    // Only show Featured/Trending if 4+ articles, else just show Latest Updates
+    if (filtered.length >= 4) {
+      const featuredArticle = filtered[0];
+      const trendingArticles = filtered.slice(1, 6);
+      const latestArticles = filtered.slice(6, 12);
+      const categoryArticles = filtered.slice(12);
+      return (
+        <View style={styles.storyContainer}>
+          {/* Hero Story Section */}
+          <View style={styles.heroSection}>
+            <Text style={styles.sectionTitle}>Featured Story</Text>
+            <AnimatedCard 
+              article={featuredArticle} 
+              index={0} 
+              variant="hero"
+            />
+          </View>
 
-    return (
-      <View style={styles.storyContainer}>
-        {/* Hero Story Section */}
-        <View style={styles.heroSection}>
-          <Text style={styles.sectionTitle}>Featured Story</Text>
-          <AnimatedCard 
-            article={featuredArticle} 
-            index={0} 
-            variant="hero"
-          />
-        </View>
+          {/* Trending Stories Horizontal Scroll */}
+          {trendingArticles.length > 0 && (
+            <View style={styles.horizontalSection}>
+              <Text style={styles.sectionTitle}>Trending Now</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.horizontalScroll}
+                contentContainerStyle={styles.horizontalContent}
+              >
+                {trendingArticles.map((article, index) => (
+                  <AnimatedCard 
+                    key={article.id}
+                    article={article} 
+                    index={index + 1} 
+                    variant="trending"
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
-        {/* Trending Stories Horizontal Scroll */}
-        {trendingArticles.length > 0 && (
-          <View style={styles.horizontalSection}>
-            <Text style={styles.sectionTitle}>Trending Now</Text>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.horizontalScroll}
-              contentContainerStyle={styles.horizontalContent}
-            >
-              {trendingArticles.map((article, index) => (
+          {/* Latest News Grid */}
+          {latestArticles.length > 0 && (
+            <View style={styles.gridSection}>
+              <Text style={styles.sectionTitle}>Latest Updates</Text>
+              <View style={styles.newsGrid}>
+                {latestArticles.map((article, index) => (
+                  <AnimatedCard 
+                    key={article.id}
+                    article={article} 
+                    index={index + 6} 
+                    variant="grid"
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* More Stories */}
+          {categoryArticles.length > 0 && (
+            <View style={styles.moreSection}>
+              <Text style={styles.sectionTitle}>More Stories</Text>
+              {categoryArticles.map((article, index) => (
                 <AnimatedCard 
                   key={article.id}
                   article={article} 
-                  index={index + 1} 
-                  variant="trending"
+                  index={index + 12} 
+                  variant="list"
                 />
               ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Latest News Grid */}
-        {latestArticles.length > 0 && (
+            </View>
+          )}
+        </View>
+      );
+    } else {
+      // Show all as Latest Updates (grid)
+      return (
+        <View style={styles.storyContainer}>
           <View style={styles.gridSection}>
             <Text style={styles.sectionTitle}>Latest Updates</Text>
             <View style={styles.newsGrid}>
-              {latestArticles.map((article, index) => (
+              {filtered.map((article, index) => (
                 <AnimatedCard 
                   key={article.id}
                   article={article} 
-                  index={index + 6} 
+                  index={index} 
                   variant="grid"
                 />
               ))}
             </View>
           </View>
-        )}
-
-        {/* More Stories */}
-        {categoryArticles.length > 0 && (
-          <View style={styles.moreSection}>
-            <Text style={styles.sectionTitle}>More Stories</Text>
-            {categoryArticles.map((article, index) => (
-              <AnimatedCard 
-                key={article.id}
-                article={article} 
-                index={index + 12} 
-                variant="list"
-              />
-            ))}
-          </View>
-        )}
-      </View>
-    );
+        </View>
+      );
+    }
   };
 
   const headerOpacity = scrollY.interpolate({
