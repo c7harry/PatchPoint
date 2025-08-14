@@ -6,12 +6,13 @@ import { palette } from '../theme/theme';
 import { sampleArticles, Article } from '../data/articles';
 import { AnimatedCard } from '../components/AnimatedCard';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export const HomeScreen: React.FC = () => {
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const [query, setQuery] = React.useState('');
   const [category, setCategory] = React.useState<string>('All');
+  const headerHeight = React.useRef(new Animated.Value(200)).current;
   
   const categories = React.useMemo(() => 
     ['All', ...Array.from(new Set(sampleArticles.map(a => a.category)))], []
@@ -24,75 +25,148 @@ export const HomeScreen: React.FC = () => {
       a.summary.toLowerCase().includes(query.toLowerCase())
     );
 
-  const renderMasonryLayout = () => {
-    if (filtered.length === 0) return null;
-
-    const columns: Article[][] = [[], [], []];
-    
-    // Only show hero if 6+ articles are present
-    const showHero = filtered.length >= 6;
-    const hero = showHero ? filtered[0] : null;
-    const remaining = showHero ? filtered.slice(1) : filtered;
-
-    // Distribute remaining articles in 3 columns
-    remaining.forEach((article, index) => {
-      columns[index % 3].push(article);
+  React.useEffect(() => {
+    const listener = scrollY.addListener(({ value }) => {
+      const newHeight = Math.max(120, 200 - value * 0.5);
+      headerHeight.setValue(newHeight);
     });
 
-    return (
-      <View style={styles.masonryContainer}>
-        {/* Hero Card - only shown when 6+ articles */}
-        {hero && <AnimatedCard article={hero} index={0} hero />}
+    return () => scrollY.removeListener(listener);
+  }, []);
 
-        {/* Masonry Grid */}
-        <View style={styles.gridContainer}>
-          {columns.map((col, colIdx) => (
-            <View style={styles.column} key={colIdx}>
-              {col.map((article, idx) => (
-                <AnimatedCard
+  const renderStoryLayout = () => {
+    if (filtered.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No articles found</Text>
+        </View>
+      );
+    }
+
+    // Netflix-inspired sections
+    const featuredArticle = filtered[0];
+    const trendingArticles = filtered.slice(1, 6);
+    const latestArticles = filtered.slice(6, 12);
+    const categoryArticles = filtered.slice(12);
+
+    return (
+      <View style={styles.storyContainer}>
+        {/* Hero Story Section */}
+        <View style={styles.heroSection}>
+          <Text style={styles.sectionTitle}>Featured Story</Text>
+          <AnimatedCard 
+            article={featuredArticle} 
+            index={0} 
+            variant="hero"
+          />
+        </View>
+
+        {/* Trending Stories Horizontal Scroll */}
+        {trendingArticles.length > 0 && (
+          <View style={styles.horizontalSection}>
+            <Text style={styles.sectionTitle}>Trending Now</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.horizontalContent}
+            >
+              {trendingArticles.map((article, index) => (
+                <AnimatedCard 
                   key={article.id}
-                  article={article}
-                  index={colIdx * 10 + idx + 1}
-                  featured={idx === 0}
+                  article={article} 
+                  index={index + 1} 
+                  variant="trending"
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Latest News Grid */}
+        {latestArticles.length > 0 && (
+          <View style={styles.gridSection}>
+            <Text style={styles.sectionTitle}>Latest Updates</Text>
+            <View style={styles.newsGrid}>
+              {latestArticles.map((article, index) => (
+                <AnimatedCard 
+                  key={article.id}
+                  article={article} 
+                  index={index + 6} 
+                  variant="grid"
                 />
               ))}
             </View>
-          ))}
-        </View>
+          </View>
+        )}
+
+        {/* More Stories */}
+        {categoryArticles.length > 0 && (
+          <View style={styles.moreSection}>
+            <Text style={styles.sectionTitle}>More Stories</Text>
+            {categoryArticles.map((article, index) => (
+              <AnimatedCard 
+                key={article.id}
+                article={article} 
+                index={index + 12} 
+                variant="list"
+              />
+            ))}
+          </View>
+        )}
       </View>
     );
   };
 
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -20],
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 100, 200],
+    outputRange: [1, 0.95, 0.85],
     extrapolate: 'clamp',
   });
 
-  const headerOpacity = scrollY.interpolate({
+  const titleScale = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [1, 0.9],
     extrapolate: 'clamp',
   });
 
+  const searchBarTranslate = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [0, -10],
+    extrapolate: 'clamp',
+  });
+
   return (
     <View style={styles.container}>
+      {/* Dynamic Background Gradient */}
       <LinearGradient
-        colors={[palette.gradientTop, palette.gradientBottom]}
+        colors={[
+          palette.gradientTop || '#0d1f17',
+          palette.gradientBottom || '#1a2f23',
+          '#0a1a0e'
+        ]}
         style={StyleSheet.absoluteFillObject}
+        locations={[0, 0.6, 1]}
       />
       
+      {/* Animated Header */}
       <Animated.View
         style={[
           styles.headerContainer,
           {
-            transform: [{ translateY: headerTranslateY }],
+            height: headerHeight,
             opacity: headerOpacity,
           },
         ]}
       >
-  <Appbar.Header mode="center-aligned" style={styles.header}>
-          <View style={styles.logoRow}>
+        {/* App Bar */}
+        <Appbar.Header mode="center-aligned" style={styles.header}>
+          <Animated.View 
+            style={[
+              styles.logoRow,
+              { transform: [{ scale: titleScale }] }
+            ]}
+          >
             <Image 
               source={require('../../assets/Favicon.png')} 
               style={styles.logo} 
@@ -101,16 +175,24 @@ export const HomeScreen: React.FC = () => {
             <Text variant="headlineLarge" style={styles.logoText}>
               PatchPoint
             </Text>
-          </View>
+          </Animated.View>
         </Appbar.Header>
         
-        <View style={styles.controlsContainer}>
+        {/* Search and Controls */}
+        <Animated.View 
+          style={[
+            styles.controlsContainer,
+            { transform: [{ translateY: searchBarTranslate }] }
+          ]}
+        >
           <Searchbar 
-            placeholder="Search articles" 
+            placeholder="Search stories, topics, or sources..." 
             value={query} 
             onChangeText={setQuery} 
             style={styles.searchBar}
             inputStyle={styles.searchInput}
+            iconColor={palette.primary}
+            placeholderTextColor="rgba(255,255,255,0.6)"
           />
           
           <ScrollView 
@@ -121,94 +203,246 @@ export const HomeScreen: React.FC = () => {
             {categories.map((cat, i) => (
               <Chip
                 key={cat}
-                compact
-                style={[styles.chip, category === cat && styles.chipActive, i === categories.length -1 && { marginRight: 0 }]}
+                compact={false}
+                style={[
+                  styles.chip, 
+                  category === cat && styles.chipActive,
+                  i === categories.length - 1 && { marginRight: 0 }
+                ]}
                 textStyle={[styles.chipText, category === cat && styles.chipActiveText]}
                 onPress={() => setCategory(cat)}
+                mode={category === cat ? "flat" : "outlined"}
               >
                 {cat}
               </Chip>
             ))}
           </ScrollView>
-        </View>
+        </Animated.View>
       </Animated.View>
 
+      {/* Main Content */}
       <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
+          { useNativeDriver: false }
         )}
-        scrollEventThrottle={16}
+        scrollEventThrottle={8}
       >
-        {renderMasonryLayout()}
+        {renderStoryLayout()}
       </Animated.ScrollView>
+
+      {/* Floating Action Hint */}
+      <Animated.View 
+        style={[
+          styles.floatingHint,
+          {
+            opacity: scrollY.interpolate({
+              inputRange: [0, 50],
+              outputRange: [1, 0],
+              extrapolate: 'clamp',
+            })
+          }
+        ]}
+      >
+        <Text style={styles.hintText}>Scroll to explore stories</Text>
+      </Animated.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#0a1a0e' 
+  },
+  
   headerContainer: {
     zIndex: 10,
     backgroundColor: 'transparent',
+    paddingBottom: 8,
   },
+  
   header: { 
-    backgroundColor: 'rgba(19,38,29,0.85)',
+    backgroundColor: 'rgba(13,31,23,0.95)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
     ...(Platform.OS === 'web' 
-      ? { backdropFilter: 'blur(10px)' as any }
+      ? { backdropFilter: 'blur(20px)' as any }
       : {}),
   },
+  
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 8,
     flex: 1
   },
+  
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    marginRight: 8
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    marginRight: 4,
+    shadowColor: palette.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
+  
   logoText: {
-    fontFamily: 'Montserrat, Roboto, System',
-    fontWeight: 'bold',
-    fontSize: 28,
+    fontFamily: 'Montserrat, System',
+    fontWeight: '900',
+    fontSize: 32,
     color: '#fff',
-    letterSpacing: 1.5,
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  controlsContainer: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: 'rgba(19,38,29,0.82)' },
-  searchBar: { marginBottom: 12, borderRadius: 16, backgroundColor: 'rgba(32,150,72,0.14)', borderWidth:1, borderColor: 'rgba(32,150,72,0.35)' },
-  searchInput: { color: palette.textPrimary },
+  
+  controlsContainer: { 
+    paddingVertical: 16, 
+    paddingHorizontal: 20, 
+    backgroundColor: 'rgba(13,31,23,0.9)' 
+  },
+  
+  searchBar: { 
+    marginBottom: 16, 
+    borderRadius: 24, 
+    backgroundColor: 'rgba(255,255,255,0.08)', 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.15)',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  
+  searchInput: { 
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  
   chipsRow: { 
-    paddingRight: 16
+    paddingRight: 20,
+    gap: 12
   },
-  chip: { backgroundColor: palette.chipBg, marginRight: 8, borderRadius: 16 },
-  chipText: { color: palette.textSecondary, fontWeight: '500' },
-  chipActive: { backgroundColor: palette.chipActive },
-  chipActiveText: { color: '#fff', fontWeight: '700' },
+  
+  chip: { 
+    backgroundColor: 'rgba(255,255,255,0.1)', 
+    borderRadius: 20,
+    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  
+  chipText: { 
+    color: 'rgba(255,255,255,0.8)', 
+    fontWeight: '600',
+    fontSize: 14
+  },
+  
+  chipActive: { 
+    backgroundColor: palette.primary,
+    borderColor: palette.primary,
+  },
+  
+  chipActiveText: { 
+    color: '#fff', 
+    fontWeight: '700' 
+  },
+  
   scrollView: {
     flex: 1,
   },
+  
   scrollContent: { 
+    paddingBottom: 60,
+  },
+  
+  storyContainer: {
     paddingTop: 8,
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+
+  emptyText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  
+  // Section Styles
+  heroSection: {
+    paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  masonryContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+  
+  horizontalSection: {
+    paddingBottom: 40,
   },
-  gridContainer: {
+  
+  gridSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+
+  moreSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  
+  sectionTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 20,
+    letterSpacing: -0.5,
+    paddingHorizontal: 20,
+  },
+  
+  horizontalScroll: {
+    paddingLeft: 20,
+  },
+
+  horizontalContent: {
+    paddingRight: 20,
+    gap: 16,
+  },
+  
+  newsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
     justifyContent: 'space-between',
-    gap: 8,
   },
-  column: {
-    flex: 1,
-    paddingHorizontal: 4,
+
+  floatingHint: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+
+  hintText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    fontWeight: '500',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
 });

@@ -1,5 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Image, Animated, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { 
+  StyleSheet, 
+  View, 
+  Image, 
+  Animated, 
+  TouchableOpacity, 
+  Dimensions, 
+  Platform 
+} from 'react-native';
 import { Card, Text, Chip } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,75 +15,67 @@ import { palette } from '../theme/theme';
 import { Article } from '../data/articles';
 import { timeAgo } from '../utils/time';
 
-const { width: screenWidth } = Dimensions.get('window');
-const cardSpacing = 16;
-const numColumns = 3;
-const cardWidth = (screenWidth - cardSpacing * (numColumns + 1)) / numColumns;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface Props { 
   article: Article; 
   index: number;
-  hero?: boolean;
-  featured?: boolean;
+  variant: 'hero' | 'trending' | 'grid' | 'list';
 }
 
-export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
+export const AnimatedCard: React.FC<Props> = ({ article, index, variant }) => {
+  const fadeIn = useRef(new Animated.Value(0)).current;
+  const slideUp = useRef(new Animated.Value(50)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
-  const rotateValue = useRef(new Animated.Value(0)).current;
-  const shimmerValue = useRef(new Animated.Value(0)).current;
-  const hoverOpacity = useRef(new Animated.Value(0)).current;
-
-  // Determine if this is a card in 3rd row or beyond (index 7+ accounting for hero card)
-  const isLowerRowCard = index >= 7;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Staggered entrance animation
-    Animated.sequence([
-      Animated.delay(index * 50),
-      Animated.parallel([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateValue, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ])
+    Animated.parallel([
+      Animated.timing(fadeIn, {
+        toValue: 1,
+        duration: 800,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUp, {
+        toValue: 0,
+        duration: 800,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
     ]).start();
 
-    // Continuous shimmer effect for hero cards
-    if (hero) {
+    // Continuous shimmer for hero cards
+    if (variant === 'hero') {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(shimmerValue, {
+          Animated.timing(shimmerAnim, {
             toValue: 1,
-            duration: 2000,
+            duration: 3000,
             useNativeDriver: true,
           }),
-          Animated.timing(shimmerValue, {
+          Animated.timing(shimmerAnim, {
             toValue: 0,
-            duration: 2000,
+            duration: 3000,
             useNativeDriver: true,
           }),
         ])
       ).start();
     }
-  }, [index, hero]);
+  }, [index, variant]);
 
   const handlePressIn = () => {
     Animated.parallel([
       Animated.spring(scaleValue, {
-        toValue: 0.95,
+        toValue: variant === 'hero' ? 0.98 : 0.95,
         tension: 300,
         friction: 10,
         useNativeDriver: true,
       }),
-      Animated.timing(hoverOpacity, {
-        toValue: 1,
+      Animated.timing(rotateAnim, {
+        toValue: Math.random() * 4 - 2, // Random slight rotation
         duration: 200,
         useNativeDriver: true,
       }),
@@ -90,53 +90,279 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
         friction: 10,
         useNativeDriver: true,
       }),
-      Animated.timing(hoverOpacity, {
+      Animated.timing(rotateAnim, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start();
   };
 
-  const translateY = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [60, 0],
-  });
-
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const rotate = rotateValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-2deg', '0deg'],
-  });
-
-  const shimmerTranslateX = shimmerValue.interpolate({
+  const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-100, screenWidth + 100],
   });
 
-  const cardHeight = hero ? 280 : featured ? 260 : 240;
-  const cardWidthStyle = hero ? screenWidth - cardSpacing * 2 : cardWidth;
+  const getCardDimensions = () => {
+    switch (variant) {
+      case 'hero':
+        return {
+          width: screenWidth - 40,
+          height: screenHeight * 0.5,
+        };
+      case 'trending':
+        return {
+          width: screenWidth * 0.7,
+          height: 280,
+        };
+      case 'grid':
+        return {
+          width: (screenWidth - 60) / 2,
+          height: 320,
+        };
+      case 'list':
+        return {
+          width: screenWidth - 40,
+          height: 140,
+        };
+    }
+  };
+
+  const dimensions = getCardDimensions();
+
+  const renderHeroCard = () => (
+    <View style={styles.heroContainer}>
+      {/* Background Image fills the card */}
+      <Image
+        source={{
+          uri: article.image || `https://picsum.photos/seed/${article.id}/1200/800?random=1`
+        }}
+        style={styles.heroImage}
+        resizeMode="cover"
+        defaultSource={require('../../assets/Favicon.png')}
+      />
+
+      {/* Shimmer Effect */}
+      <Animated.View
+        style={[
+          styles.shimmerOverlay,
+          {
+            transform: [{ translateX: shimmerTranslate }]
+          }
+        ]}
+      />
+
+      {/* Gradient Overlays */}
+      <LinearGradient
+        colors={[
+          'rgba(0,0,0,0.1)',
+          'rgba(0,0,0,0.3)',
+          'rgba(0,0,0,0.8)',
+          'rgba(0,0,0,0.95)'
+        ]}
+        style={styles.heroGradient}
+        locations={[0, 0.4, 0.8, 1]}
+      />
+
+      {/* Content overlays image, no extra space */}
+      <View style={styles.heroContent} pointerEvents="box-none">
+        {/* Category & Time */}
+        <View style={styles.heroMeta}>
+          <View style={[styles.categoryPill, { backgroundColor: getCategoryColor(article.category) }]}> 
+            <Text style={styles.categoryText}>{article.category}</Text>
+          </View>
+          <View style={styles.timeContainer}>
+            <Ionicons name="time-outline" size={16} color="#fff" />
+            <Text style={styles.timeText}>{timeAgo ? timeAgo(article.publishedAt) : 'Just now'}</Text>
+          </View>
+        </View>
+
+        {/* Title */}
+        <Text style={styles.heroTitle} numberOfLines={3}>
+          {article.title}
+        </Text>
+
+        {/* Summary */}
+        <Text style={styles.heroSummary} numberOfLines={3}>
+          {article.summary}
+        </Text>
+
+        {/* Source & CTA */}
+        <View style={styles.heroFooter}>
+          <View style={styles.sourceContainer}>
+            <Ionicons name="newspaper-outline" size={16} color="#ccc" />
+            <Text style={styles.sourceText}>{article.source}</Text>
+          </View>
+          <View style={styles.ctaButton}>
+            <Text style={styles.ctaText}>Read Story</Text>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderTrendingCard = () => (
+    <View style={styles.trendingContainer}>
+      {/* Image Section */}
+      <View style={styles.trendingImageContainer}>
+        <Image
+          source={{ uri: article.image || `https://picsum.photos/seed/${article.id}/600/400` }}
+          style={styles.trendingImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)']}
+          style={styles.trendingImageOverlay}
+        />
+        
+        {/* Category Badge */}
+        <View style={styles.trendingCategoryContainer}>
+          <View style={[styles.trendingCategoryBadge, { backgroundColor: getCategoryColor(article.category) }]}>
+            <Text style={styles.trendingCategoryText}>{article.category}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Content Section */}
+      <View style={styles.trendingContent}>
+        <Text style={styles.trendingTitle} numberOfLines={2}>
+          {article.title}
+        </Text>
+        <Text style={styles.trendingSummary} numberOfLines={2}>
+          {article.summary}
+        </Text>
+        
+        {/* Meta */}
+        <View style={styles.trendingMeta}>
+          <View style={styles.trendingSource}>
+            <Ionicons name="radio-outline" size={12} color={palette.primary} />
+            <Text style={styles.trendingSourceText}>{article.source}</Text>
+          </View>
+          <Text style={styles.trendingTime}>{timeAgo ? timeAgo(article.publishedAt) : 'Just now'}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderGridCard = () => (
+    <View style={styles.gridContainer}>
+      {/* Image */}
+      <View style={styles.gridImageContainer}>
+        <Image
+          source={{ uri: article.image || `https://picsum.photos/seed/${article.id}/400/300` }}
+          style={styles.gridImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.6)']}
+          style={styles.gridImageOverlay}
+        />
+      </View>
+
+      {/* Content */}
+      <View style={styles.gridContent}>
+        <View style={styles.gridCategoryRow}>
+          <Chip 
+            compact 
+            style={[styles.gridChip, { backgroundColor: getCategoryColor(article.category) + '20' }]}
+            textStyle={[styles.gridChipText, { color: getCategoryColor(article.category) }]}
+          >
+            {article.category}
+          </Chip>
+        </View>
+        
+        <Text style={styles.gridTitle} numberOfLines={2}>
+          {article.title}
+        </Text>
+        
+        <Text style={styles.gridSummary} numberOfLines={3}>
+          {article.summary}
+        </Text>
+
+        <View style={styles.gridFooter}>
+          <Text style={styles.gridSource} numberOfLines={1}>{article.source}</Text>
+          <Text style={styles.gridTime}>{timeAgo ? timeAgo(article.publishedAt) : 'Just now'}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderListCard = () => (
+    <View style={styles.listContainer}>
+      {/* Image */}
+      <View style={styles.listImageContainer}>
+        <Image
+          source={{ uri: article.image || `https://picsum.photos/seed/${article.id}/300/200` }}
+          style={styles.listImage}
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Content */}
+      <View style={styles.listContent}>
+        <View style={styles.listHeader}>
+          <Chip 
+            compact 
+            style={[styles.listChip, { backgroundColor: getCategoryColor(article.category) + '15' }]}
+            textStyle={[styles.listChipText, { color: getCategoryColor(article.category) }]}
+          >
+            {article.category}
+          </Chip>
+          <Text style={styles.listTime}>{timeAgo ? timeAgo(article.publishedAt) : 'Just now'}</Text>
+        </View>
+        
+        <Text style={styles.listTitle} numberOfLines={2}>
+          {article.title}
+        </Text>
+        
+        <Text style={styles.listSummary} numberOfLines={2}>
+          {article.summary}
+        </Text>
+
+        <View style={styles.listFooter}>
+          <View style={styles.listSourceContainer}>
+            <Ionicons name="newspaper-outline" size={12} color={palette.textMuted} />
+            <Text style={styles.listSource}>{article.source}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderCardContent = () => {
+    switch (variant) {
+      case 'hero':
+        return renderHeroCard();
+      case 'trending':
+        return renderTrendingCard();
+      case 'grid':
+        return renderGridCard();
+      case 'list':
+        return renderListCard();
+    }
+  };
 
   return (
     <Animated.View
       style={[
-        styles.cardContainer,
         {
-          opacity,
+          opacity: fadeIn,
           transform: [
-            { translateY }, 
+            { translateY: slideUp },
             { scale: scaleValue },
-            { rotate: hero ? rotate : '0deg' }
+            { 
+              rotate: rotateAnim.interpolate({
+                inputRange: [-10, 10],
+                outputRange: ['-10deg', '10deg'],
+              })
+            }
           ],
-          width: cardWidthStyle,
-          height: cardHeight,
+          width: dimensions.width,
+          height: dimensions.height,
         },
-        hero && styles.heroContainer,
-        featured && styles.featuredContainer,
+        variant === 'list' && styles.listWrapper,
+        variant === 'grid' && styles.gridWrapper,
       ]}
     >
       <TouchableOpacity
@@ -146,200 +372,13 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
         style={styles.touchable}
       >
         <Card style={[
-          styles.card, 
-          { height: cardHeight },
-          hero && styles.heroCard,
-          featured && styles.featuredCard
-        ]} mode="contained">
-          
-          {/* Hover Overlay Effect */}
-          <Animated.View 
-            style={[
-              styles.hoverOverlay,
-              { opacity: hoverOpacity }
-            ]} 
-          />
-
-          {hero ? (
-            <View style={styles.heroWrapper}>
-              {/* Premium Gradient Background */}
-              <LinearGradient
-                colors={[
-                  palette.primaryDark + 'E6',
-                  palette.primary + 'CC', 
-                  palette.primaryLight + 'B3'
-                ]}
-                style={styles.heroBackgroundGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-              
-              {/* Hero Image with Parallax Effect */}
-              <View style={styles.heroImageContainer}>
-                <Image
-                  source={{ uri: article.image || `https://picsum.photos/seed/${article.id}/1200/800` }}
-                  style={styles.heroImage}
-                  resizeMode="cover"
-                />
-                {/* Shimmer Effect */}
-                {hero && (
-                  <Animated.View
-                    style={[
-                      styles.shimmerOverlay,
-                      {
-                        transform: [{ translateX: shimmerTranslateX }]
-                      }
-                    ]}
-                  />
-                )}
-              </View>
-
-              {/* Professional Gradient Overlay */}
-              <LinearGradient
-                colors={[
-                  'rgba(0,0,0,0.1)',
-                  'rgba(0,0,0,0.3)',
-                  'rgba(0,0,0,0.7)',
-                  'rgba(0,0,0,0.9)'
-                ]}
-                style={styles.heroGradientOverlay}
-                locations={[0, 0.3, 0.7, 1]}
-              />
-
-              {/* Content Overlay */}
-              <View style={styles.heroContentWrapper}>
-                {/* Header Section */}
-                <View style={styles.heroHeader}>
-                  <View style={styles.categoryWrapper}>
-                    <LinearGradient
-                      colors={[getCategoryColor(article.category), getCategoryColor(article.category) + '80']}
-                      style={styles.categoryGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                    >
-                      <Chip 
-                        compact 
-                        style={styles.heroChip}
-                        textStyle={styles.heroChipText}
-                      >
-                        {article.category}
-                      </Chip>
-                    </LinearGradient>
-                  </View>
-                  <View style={styles.timeWrapper}>
-                    <Ionicons name="time-outline" size={14} color="#ffffff" style={styles.timeIcon} />
-                    <Text style={styles.heroTime}>
-                      {timeAgo(article.publishedAt)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Title Section with Glassmorphism */}
-                <View style={styles.heroTitleContainer}>
-                  <Text style={styles.heroTitle} numberOfLines={2}>
-                    {article.title}
-                  </Text>
-                </View>
-
-                {/* Summary Section */}
-                <View style={styles.heroSummaryContainer}>
-                  <Text style={styles.heroSummary} numberOfLines={2}>
-                    {article.summary}
-                  </Text>
-                </View>
-
-                {/* Footer Meta */}
-                <View style={styles.heroFooter}>
-                  <View style={styles.sourceContainer}>
-                    <Ionicons name="newspaper-outline" size={14} color="#e0e0e0" />
-                    <Text style={styles.heroSource}>
-                      {article.source}
-                    </Text>
-                  </View>
-                  <View style={styles.readMoreContainer}>
-                    <Text style={styles.readMore}>Read More</Text>
-                    <Ionicons name="arrow-forward" size={14} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
-            </View>
-          ) : (
-            // Modern 3-Section Professional Card Layout
-            <View style={styles.modernCardWrapper}>
-              
-              {/* SECTION 1: Image with Title Overlay - Primary Theme */}
-              <View style={styles.sectionImageTitle}>
-                <View style={styles.modernImageContainer}>
-                  <Image
-                    source={{ uri: article.image || `https://picsum.photos/seed/${article.id}/800/600` }}
-                    style={styles.modernImage}
-                    resizeMode="cover"
-                  />
-                  
-                  {/* Dark gradient overlay for text readability */}
-                  <LinearGradient
-                    colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.7)']}
-                    style={styles.modernImageOverlay}
-                    locations={[0, 0.5, 1]}
-                  />
-                  
-                  {/* Category badge overlay */}
-                  <View style={styles.modernCategoryOverlay}>
-                    <LinearGradient
-                      colors={[getCategoryColor(article.category), getCategoryColor(article.category) + 'CC']}
-                      style={styles.modernCategoryBadge}
-                    >
-                      <Text style={styles.modernCategoryText}>
-                        {article.category}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-
-                  {/* Title overlay on image */}
-                  <View style={styles.titleOverlaySection}>
-                    <Text style={[
-                      styles.modernTitleOverlay,
-                      featured && styles.modernFeaturedTitleOverlay
-                    ]} numberOfLines={2}>
-                      {article.title}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* SECTION 2: Summary - Secondary Theme */}
-              <View style={styles.sectionSummary}>
-                <Text style={styles.modernSummary} numberOfLines={3}>
-                  {article.summary}
-                </Text>
-              </View>
-
-              {/* SECTION 3: Meta Data - Tertiary Theme */}
-              <View style={[
-                styles.sectionMeta,
-                isLowerRowCard && styles.sectionMetaCompact
-              ]}>
-                <View style={[
-                  styles.modernMetaRow,
-                  isLowerRowCard && styles.modernMetaRowCompact
-                ]}>
-                  <View style={styles.modernSourceBox}>
-                    <Ionicons name="newspaper-outline" size={14} color={palette.primary} />
-                    <Text style={styles.modernSource} numberOfLines={1}>
-                      {article.source}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.modernTimeBox}>
-                    <Ionicons name="time-outline" size={14} color={palette.textMuted} />
-                    <Text style={styles.modernTime}>
-                      {timeAgo(article.publishedAt)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
+          styles.baseCard,
+          variant === 'hero' && styles.heroCard,
+          variant === 'trending' && styles.trendingCard,
+          variant === 'grid' && styles.gridCard,
+          variant === 'list' && styles.listCard,
+        ]}>
+          {renderCardContent()}
         </Card>
       </TouchableOpacity>
     </Animated.View>
@@ -347,468 +386,456 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, hero, featured }
 };
 
 const getCategoryColor = (category: string): string => {
-  // Map categories to harmonious green-accent variants
-  const map: Record<string, string> = {
-    Technology: palette.primaryLight,
-    Health: palette.primary,
-    Sports: palette.accentWarm,
-    Politics: '#ec6f5e',
-    Entertainment: '#62c782',
-    Business: '#52b47a',
-    Local: palette.primaryLight,
-    Education: '#4fb572'
+  const colors: Record<string, string> = {
+    Technology: '#3b82f6',
+    Health: '#ef4444',
+    Sports: '#f59e0b',
+    Politics: '#8b5cf6',
+    Entertainment: '#ec4899',
+    Business: '#10b981',
+    Local: '#06b6d4',
+    Education: '#84cc16'
   };
-  return map[category] || palette.primaryLight;
+  return colors[category] || palette.primary || '#10b981';
 };
 
 const styles = StyleSheet.create({
-  // Container Styles
-  cardContainer: {
-    marginBottom: 20,
-  },
-  heroContainer: { 
-    marginBottom: 32,
-  },
-  featuredContainer: { 
-    marginBottom: 24,
-  },
   touchable: {
     flex: 1,
   },
-  
-  // Card Base Styles
-  card: { 
-    borderRadius: 24, 
-    overflow: 'hidden', 
-    backgroundColor: palette.surface,
+
+  baseCard: {
+    flex: 1,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: palette.surface || '#1a2f23',
     ...(Platform.OS === 'web' ? {
-      boxShadow: '0 12px 40px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.1)'
+      boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
     } : {
       elevation: 12,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-    })
-  },
-  
-  heroCard: {
-    borderRadius: 28,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 20px 60px rgba(32,150,72,0.15), 0 8px 24px rgba(0,0,0,0.2)'
-    } : {
-      elevation: 16,
-      shadowColor: palette.primary,
-      shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.3,
       shadowRadius: 12,
     })
   },
-  
-  featuredCard: {
-    borderRadius: 26,
+
+  // Hero Card Styles
+  heroCard: {
+    borderRadius: 28,
     ...(Platform.OS === 'web' ? {
-      boxShadow: '0 16px 48px rgba(0,0,0,0.12), 0 6px 20px rgba(0,0,0,0.08)'
+      boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 10px 30px rgba(16,185,129,0.2)'
     } : {
-      elevation: 14,
+      elevation: 20,
+      shadowColor: palette.primary,
     })
   },
 
-  // Hover Effect
-  hoverOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    zIndex: 10,
+  heroContainer: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    minHeight: 440,
+    overflow: 'hidden',
   },
 
-  // Hero Card Styles
-  heroWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  
-  heroBackgroundGradient: { 
-    position: 'absolute', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    bottom: 0,
-    zIndex: 1 
-  },
-  
-  heroImageContainer: {
+  heroImage: {
+    width: '100%',
+    height: '100%',
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 2,
   },
-  
-  heroImage: { 
-    width: '100%', 
-    height: '100%',
-  },
-  
+
   shimmerOverlay: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    width: 100,
+    width: 60,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    transform: [{ skewX: '-20deg' }],
-    zIndex: 5,
+    transform: [{ skewX: '-15deg' }],
+    zIndex: 2,
   },
-  
-  heroGradientOverlay: {
+
+  heroGradient: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    height: '70%',
     zIndex: 3,
   },
-  
-  heroContentWrapper: {
+
+  heroContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    paddingTop: 40,
+    padding: 28,
     zIndex: 4,
+    backgroundColor: 'transparent', // Ensure no background blocking
   },
-  
-  heroHeader: {
+
+  heroMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  
-  categoryWrapper: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  
-  categoryGradient: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  
-  heroChip: {
-    backgroundColor: 'transparent',
-    borderRadius: 20,
+
+  categoryPill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderRadius: 20,
   },
-  
-  heroChipText: {
-    color: '#ffffff',
-    fontWeight: '700',
+
+  categoryText: {
+    color: '#fff',
+    fontWeight: '800',
     fontSize: 13,
     letterSpacing: 0.5,
   },
-  
-  timeWrapper: {
+
+  timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    gap: 6,
   },
-  
-  timeIcon: {
-    marginRight: 4,
-  },
-  
-  heroTime: {
-    color: '#ffffff',
+
+  timeText: {
+    color: '#fff',
+    fontSize: 13,
     fontWeight: '600',
-    fontSize: 12,
   },
-  
-  heroTitleContainer: {
-    marginBottom: 12,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 16,
-    padding: 16,
-    ...(Platform.OS === 'web' ? {
-      backdropFilter: 'blur(10px)',
-    } : {}),
-  },
-  
+
   heroTitle: {
-    fontSize: 22,
-    lineHeight: 28,
-    color: '#ffffff',
-    fontWeight: '800',
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '900',
+    lineHeight: 34,
+    marginBottom: 12,
     letterSpacing: -0.5,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  
-  heroSummaryContainer: {
-    marginBottom: 16,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderRadius: 12,
-    padding: 14,
-    ...(Platform.OS === 'web' ? {
-      backdropFilter: 'blur(8px)',
-    } : {}),
-  },
-  
+
   heroSummary: {
-    color: '#f0f0f0',
-    fontSize: 14,
-    lineHeight: 20,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 20,
     fontWeight: '500',
   },
-  
+
   heroFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  
+
   sourceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  
-  heroSource: {
-    color: '#e0e0e0',
-    fontWeight: '600',
-    fontSize: 12,
-    marginLeft: 6,
-  },
-  
-  readMoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.primary,
-    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-  },
-  
-  readMore: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
-    marginRight: 6,
+    borderRadius: 16,
+    gap: 6,
   },
 
-  // Modern 3-Section Card Styles
-  modernCardWrapper: {
+  sourceText: {
+    color: '#ccc',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  ctaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.primary || '#10b981',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    gap: 8,
+  },
+
+  ctaText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Trending Card Styles
+  trendingCard: {
+    borderRadius: 24,
+  },
+
+  trendingContainer: {
     flex: 1,
   },
 
-  // SECTION 1: Image & Title (Primary Theme Colors)
-  sectionImageTitle: {
-    backgroundColor: palette.surface,
-  },
-
-  modernImageContainer: {
-    height: 140,
+  trendingImageContainer: {
+    height: 160,
     position: 'relative',
-    backgroundColor: palette.surfaceAlt,
   },
 
-  modernImage: {
+  trendingImage: {
     width: '100%',
     height: '100%',
   },
 
-  modernImageOverlay: {
+  trendingImageOverlay: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    zIndex: 2,
+    height: '50%',
   },
 
-  modernCategoryOverlay: {
+  trendingCategoryContainer: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
-    zIndex: 4,
+    top: 12,
+    right: 12,
   },
 
-  modernCategoryBadge: {
-    paddingHorizontal: 10,
+  trendingCategoryBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+
+  trendingCategoryText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  trendingContent: {
+    padding: 16,
+    flex: 1,
+    backgroundColor: palette.surface || '#1a2f23',
+  },
+
+  trendingTitle: {
+    color: palette.textPrimary || '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+
+  trendingSummary: {
+    color: palette.textSecondary || 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+
+  trendingMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  trendingSource: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: (palette.primary || '#10b981') + '15',
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    gap: 4,
   },
 
-  modernCategoryText: {
-    color: '#ffffff',
+  trendingSourceText: {
+    color: palette.primary || '#10b981',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  trendingTime: {
+    color: palette.textMuted || 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+
+  // Grid Card Styles
+  gridCard: {
+    borderRadius: 20,
+  },
+
+  gridWrapper: {
+    marginBottom: 16,
+  },
+
+  gridContainer: {
+    flex: 1,
+  },
+
+  gridImageContainer: {
+    height: 140,
+    position: 'relative',
+  },
+
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  gridImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+  },
+
+  gridContent: {
+    padding: 14,
+    flex: 1,
+    backgroundColor: palette.surface || '#1a2f23',
+  },
+
+  gridCategoryRow: {
+    marginBottom: 8,
+  },
+
+  gridChip: {
+    alignSelf: 'flex-start',
+  },
+
+  gridChipText: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
 
-  titleOverlaySection: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-    zIndex: 3,
-  },
-
-  modernTitleOverlay: {
-    color: '#ffffff',
-    fontSize: 15,
+  gridTitle: {
+    color: palette.textPrimary || '#fff',
+    fontSize: 14,
     fontWeight: '700',
-    lineHeight: 20,
-    letterSpacing: -0.2,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    lineHeight: 19,
+    marginBottom: 8,
   },
 
-  modernFeaturedTitleOverlay: {
-    fontSize: 17,
-    fontWeight: '800',
-    lineHeight: 22,
-    textShadowRadius: 4,
-  },
-
-  titleSection: {
-    padding: 14,
-    backgroundColor: palette.surface,
-  },
-
-  modernTitle: {
-    color: palette.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
-    letterSpacing: -0.2,
-  },
-
-  modernFeaturedTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    lineHeight: 22,
-  },
-
-  // SECTION 2: Summary (Secondary Theme Colors)
-  sectionSummary: {
-    backgroundColor: palette.surfaceElevated,
-    padding: 14,
-    borderTopWidth: 1,
-    borderTopColor: palette.outline + '15',
-  },
-
-  modernSummary: {
-    color: palette.textSecondary,
+  gridSummary: {
+    color: palette.textSecondary || 'rgba(255,255,255,0.7)',
     fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '400',
-    letterSpacing: 0.1,
+    lineHeight: 16,
+    marginBottom: 12,
   },
 
-  // SECTION 3: Meta Data (Tertiary Theme Colors)
-  sectionMeta: {
-    backgroundColor: palette.surfaceAlt,
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: palette.outline + '20',
+  gridFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
-  sectionMetaCompact: {
-    padding: 8,
-    borderTopWidth: 0.5,
+  gridSource: {
+    color: palette.textMuted || 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    fontWeight: '500',
+    flex: 1,
   },
 
-  modernMetaRow: {
+  gridTime: {
+    color: palette.textMuted || 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+
+  // List Card Styles
+  listCard: {
+    borderRadius: 16,
+  },
+
+  listWrapper: {
+    marginBottom: 12,
+  },
+
+  listContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+
+  listImageContainer: {
+    width: 120,
+    height: '100%',
+  },
+
+  listImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  listContent: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: palette.surface || '#1a2f23',
+    justifyContent: 'space-between',
+  },
+
+  listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
 
-  modernMetaRowCompact: {
-    marginBottom: 4,
+  listChip: {
+    alignSelf: 'flex-start',
   },
 
-  modernSourceBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.primary + '10',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
+  listChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
 
-  modernSource: {
-    color: palette.primary,
-    fontSize: 11,
-    fontWeight: '600',
-    marginLeft: 4,
-    letterSpacing: 0.2,
-  },
-
-  modernTimeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-
-  modernTime: {
-    color: palette.textMuted,
+  listTime: {
+    color: palette.textMuted || 'rgba(255,255,255,0.5)',
     fontSize: 11,
     fontWeight: '500',
-    marginLeft: 4,
   },
 
-  modernActionIndicator: {
+  listTitle: {
+    color: palette.textPrimary || '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+
+  listSummary: {
+    color: palette.textSecondary || 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+
+  listFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
   },
 
-  modernIndicatorLine: {
-    width: 20,
-    height: 2,
-    backgroundColor: palette.primary,
-    borderRadius: 1,
-    marginRight: 8,
+  listSourceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
 
-  modernActionText: {
-    color: palette.primary,
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginRight: 4,
+  listSource: {
+    color: palette.textMuted || 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    fontWeight: '500',
   },
-
-  // Legacy styles (keeping for compatibility)
-  chip: { borderRadius: 12 },
-  chipText: { color: '#fff', fontWeight: '600', fontSize: 11 },
-  time: { color: palette.textMuted, fontWeight: '500' },
-  title: { color: palette.textPrimary, fontWeight: '700', marginBottom: 6, lineHeight: 24 },
-  summary: { color: palette.textSecondary, marginTop: 4, marginBottom: 10, lineHeight: 20 },
-  source: { color: palette.textMuted, fontWeight: '500' },
 });
