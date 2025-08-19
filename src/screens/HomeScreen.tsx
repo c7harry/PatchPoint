@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { palette } from '../theme/theme';
 import { sampleArticles, Article } from '../data/articles';
 import { AnimatedCard } from '../components/AnimatedCard';
+import { useResponsiveDimensions } from '../utils/useResponsiveDimensions';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ export const HomeScreen: React.FC = () => {
   const [query, setQuery] = React.useState('');
   const [category, setCategory] = React.useState<string>('All');
   const headerHeight = React.useRef(new Animated.Value(200)).current;
+  const { width: screenWidth, height: screenHeight, breakpoint } = useResponsiveDimensions();
   
   const categories = React.useMemo(() => 
     ['All', ...Array.from(new Set(sampleArticles.map(a => a.category)))], []
@@ -34,6 +36,12 @@ export const HomeScreen: React.FC = () => {
     return () => scrollY.removeListener(listener);
   }, []);
 
+  // Update header base height and other layout concerns when screen size changes
+  React.useEffect(() => {
+    const base = breakpoint === 'xl' ? 250 : breakpoint === 'lg' ? 220 : 200;
+    headerHeight.setValue(base);
+  }, [screenWidth, screenHeight, breakpoint]);
+
   const renderStoryLayout = () => {
     if (filtered.length === 0) {
       return (
@@ -44,7 +52,7 @@ export const HomeScreen: React.FC = () => {
     }
 
     // Only show Featured/Trending if 4+ articles, else just show Latest Updates
-    if (filtered.length >= 4) {
+  if (filtered.length >= 4) {
       const featuredArticle = filtered[0];
       const trendingArticles = filtered.slice(1, 6);
       const latestArticles = filtered.slice(6, 12);
@@ -87,7 +95,7 @@ export const HomeScreen: React.FC = () => {
           {latestArticles.length > 0 && (
             <View style={styles.gridSection}>
               <Text style={styles.sectionTitle}>Latest Updates</Text>
-              <View style={styles.newsGrid}>
+              <View style={[styles.newsGrid, { justifyContent: 'flex-start' }]}> 
                 {latestArticles.map((article, index) => (
                   <AnimatedCard 
                     key={article.id}

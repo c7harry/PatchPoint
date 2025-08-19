@@ -5,7 +5,6 @@ import {
   Image, 
   Animated, 
   TouchableOpacity, 
-  Dimensions, 
   Platform 
 } from 'react-native';
 import { Card, Text, Chip } from 'react-native-paper';
@@ -14,8 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/theme';
 import { Article } from '../data/articles';
 import { timeAgo } from '../utils/time';
+import { useResponsiveDimensions } from '../utils/useResponsiveDimensions';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface Props { 
   article: Article; 
@@ -24,6 +23,7 @@ interface Props {
 }
 
 export const AnimatedCard: React.FC<Props> = ({ article, index, variant }) => {
+  const { width: screenWidth, height: screenHeight } = useResponsiveDimensions();
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(50)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
@@ -104,20 +104,25 @@ export const AnimatedCard: React.FC<Props> = ({ article, index, variant }) => {
   });
 
   const getCardDimensions = () => {
+    // Use responsive breakpoints to adjust sizes conservatively
     switch (variant) {
       case 'hero':
+        // allow hero to span the full available content width (accounting for page padding)
         return {
-          width: screenWidth - 40,
-          height: screenHeight * 0.5,
+          width: Math.max(0, screenWidth - 40),
+          height: Math.max(360, screenHeight * 0.45),
         };
       case 'trending':
         return {
-          width: screenWidth * 0.7,
+          width: Math.min(760, screenWidth * 0.72),
           height: 280,
         };
       case 'grid':
+        // two columns on small, three on large widths
+        const cols = screenWidth >= 900 ? 3 : 2;
+        const gapTotal = 16 * (cols - 1) + 40; // grid gaps + outer padding
         return {
-          width: (screenWidth - 60) / 2,
+          width: (screenWidth - gapTotal) / cols,
           height: 320,
         };
       case 'list':
